@@ -36,13 +36,14 @@ android {
 // the libraries already bundled by the Volt MX Android build.
 
 // After every release build, copy the AAR into the VoltMX project's native libs folder.
-// Override the destination with -PvoltmxLibDir=/other/path
-def voltmxLibDir = project.findProperty('voltmxLibDir') ?:
-        '/Users/harsha_k/workStuff/VoltMX/VOLTMX_WS_OCT_25/Metrash2Services/resources/customlibs/lib/android'
+// Set voltmxLibDir in ~/.gradle/gradle.properties (kept out of git),
+// or override per build with -PvoltmxLibDir=/other/path
+def voltmxLibDir = project.findProperty('voltmxLibDir')
 
 tasks.register('copyAarToVoltMX', Copy) {
+    onlyIf { voltmxLibDir != null }
     from layout.buildDirectory.file('outputs/aar/LiveUpdateNFILib.aar')
-    into voltmxLibDir
+    into voltmxLibDir ?: layout.buildDirectory.dir('unusedCopyDestination')
     doFirst { println "Copying LiveUpdateNFILib.aar -> ${voltmxLibDir}" }
 }
 
