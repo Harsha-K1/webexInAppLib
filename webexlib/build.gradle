@@ -22,7 +22,30 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+
+    libraryVariants.configureEach { variant ->
+        if (variant.buildType.name == 'release') {
+            variant.outputs.configureEach { output ->
+                outputFileName = "webexlib.aar"
+            }
+        }
+    }
 }
 
 // Intentionally no dependencies: keeps the AAR free of version clashes with
 // the libraries already bundled by the Volt MX Android build.
+
+// After every release build, copy the AAR into the VoltMX project's native libs folder.
+// Override the destination with -PvoltmxLibDir=/other/path
+def voltmxLibDir = project.findProperty('voltmxLibDir') ?:
+        '/Users/harsha_k/workStuff/VoltMX/VOLTMX_WS_OCT_25/Metrash2Services/resources/customlibs/lib/android'
+
+tasks.register('copyAarToVoltMX', Copy) {
+    from layout.buildDirectory.file('outputs/aar/LiveUpdateNFILib.aar')
+    into voltmxLibDir
+    doFirst { println "Copying LiveUpdateNFILib.aar -> ${voltmxLibDir}" }
+}
+
+afterEvaluate {
+    tasks.named('assembleRelease') { finalizedBy 'copyAarToVoltMX' }
+}
