@@ -2,67 +2,39 @@ package com.webexinapp.lib;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.ContextWrapper;
-import android.util.Log;
+import android.content.Intent;
 
 /**
- * Public entry point, designed for the Volt MX Java FFI. Needs no manifest activity: the
- * meeting is shown in a full-screen dialog on top of the Activity you pass in.
+ * Public entry point. Designed to be called from Volt MX through the Java FFI:
  *
  * <pre>
  * var WebexMeeting = java.import("com.webexinapp.lib.WebexMeeting");
  * var KonyMain = java.import("com.konylabs.android.KonyMain");
- * var ok = WebexMeeting.open(KonyMain.getActivityContext(), url);
- * if (!ok) { kony.application.openURL(url); }   // optional fallback
+ * WebexMeeting.open(KonyMain.getActivityContext(), "https://company.webex.com/meet/xyz");
  * </pre>
- *
- * Filter Logcat by tag "WebexMeeting" to see what happened.
  */
 public final class WebexMeeting {
 
-    static final String TAG = "WebexMeeting";
-
     private WebexMeeting() {}
 
-    public static boolean open(Context context, String url) {
-        return open(context, url, "Webex Meeting", true);
+    /** Opens the meeting link in an in-app screen with camera/mic permissions handled. */
+    public static void open(Context context, String url) {
+        open(context, url, "Webex Meeting", true);
     }
 
     /**
-     * @param desktopSite true to use a desktop-Chrome user agent so Webex serves the
-     *                    "join from browser" client rather than pushing the mobile app.
-     * @return true if the in-app meeting screen was scheduled, false if it could not be
-     *         shown (no Activity context, empty URL).
+     * @param title        text shown in the top bar
+     * @param desktopSite  true to present a desktop-Chrome user agent so Webex serves the
+     *                     "join from browser" web client instead of pushing the mobile app.
      */
-    public static boolean open(Context context, final String url, final String title,
-                               final boolean desktopSite) {
-        final Activity activity = findActivity(context);
-        if (activity == null) {
-            Log.e(TAG, "open() needs an Activity context, got: " + context);
-            return false;
+    public static void open(Context context, String url, String title, boolean desktopSite) {
+        Intent intent = new Intent(context, WebexMeetingActivity.class);
+        intent.putExtra(WebexMeetingActivity.EXTRA_URL, url);
+        intent.putExtra(WebexMeetingActivity.EXTRA_TITLE, title);
+        intent.putExtra(WebexMeetingActivity.EXTRA_DESKTOP, desktopSite);
+        if (!(context instanceof Activity)) {
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         }
-        if (url == null || url.length() == 0) {
-            Log.e(TAG, "open() called with empty url");
-            return false;
-        }
-        Log.i(TAG, "Opening in-app: " + url);
-        activity.runOnUiThread(new Runnable() {
-            @Override public void run() {
-                try {
-                    new WebexMeetingDialog(activity, url, title, desktopSite).show();
-                } catch (Throwable t) {
-                    Log.e(TAG, "Failed to show meeting dialog", t);
-                }
-            }
-        });
-        return true;
-    }
-
-    private static Activity findActivity(Context c) {
-        while (c instanceof ContextWrapper) {
-            if (c instanceof Activity) return (Activity) c;
-            c = ((ContextWrapper) c).getBaseContext();
-        }
-        return null;
+        context.startActivity(intent);
     }
 }

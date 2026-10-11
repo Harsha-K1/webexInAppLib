@@ -29,18 +29,18 @@ Output: `webexlib/build/outputs/aar/webexlib-release.aar`
 
 1. In Volt MX Iris: **Project > Native Functions / Android > Add a library** (the project's
    `Android/libs` area) and add `webexlib-release.aar`.
-2. The meeting is shown in a full-screen dialog on your current Activity, so **no manifest
-   activity is needed**. Make sure the app declares `CAMERA`, `RECORD_AUDIO`,
-   `MODIFY_AUDIO_SETTINGS`, `BLUETOOTH_CONNECT` and `INTERNET` (the AAR declares them; add
-   them in your Iris Android manifest settings if they are not merged).
+2. Manifest entries come with the AAR via manifest merge. If your Iris build does not merge
+   them, add to your Android manifest settings: permissions `CAMERA`, `RECORD_AUDIO`,
+   `MODIFY_AUDIO_SETTINGS`, `BLUETOOTH_CONNECT`, `INTERNET`, and
+   `<activity android:name="com.webexinapp.lib.WebexMeetingActivity" android:exported="false"
+   android:configChanges="orientation|screenSize|keyboardHidden"/>`.
 3. Call from Iris JS (Android only; keep iOS on the browser widget):
 
 ```js
 if (kony.os.deviceInfo().name === "android") {
   var WebexMeeting = java.import("com.webexinapp.lib.WebexMeeting");
   var KonyMain = java.import("com.konylabs.android.KonyMain");
-  var ok = WebexMeeting.open(KonyMain.getActivityContext(), "https://yourco.webex.com/meet/room");
-  // ok === false -> no Activity context; see Logcat tag "WebexMeeting"
+  WebexMeeting.open(KonyMain.getActivityContext(), "https://yourco.webex.com/meet/room");
   // or: WebexMeeting.open(ctx, url, "Standup", true /* desktop user agent */);
 }
 ```
