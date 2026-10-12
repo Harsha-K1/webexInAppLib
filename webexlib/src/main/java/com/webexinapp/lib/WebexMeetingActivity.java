@@ -10,7 +10,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -128,16 +127,14 @@ public class WebexMeetingActivity extends Activity {
     }
 
     /**
-     * On Android 15+ the window is drawn edge-to-edge, so system bars overlap our content.
-     * Pad the root by the system bar insets (and keyboard). Some OEM builds (e.g. One UI)
-     * don't deliver usable insets here, so a post-layout check falls back to the system
-     * dimension resources if the content still sits under the bars.
+     * On Android 15+ (and whenever targetSdk >= 35) apps are drawn edge-to-edge, so the
+     * status/navigation bars overlap our content. Pad the root by the system bar insets
+     * (and the keyboard) so the Close bar and the web page stay clear of them.
      */
     private void applyWindowInsets(final View root) {
         getWindow().setStatusBarColor(Color.parseColor("#1B1B1B"));
         getWindow().setNavigationBarColor(Color.BLACK);
-
-        View.OnApplyWindowInsetsListener listener = new View.OnApplyWindowInsetsListener() {
+        root.setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {
             @Override
             public WindowInsets onApplyWindowInsets(View v, WindowInsets insets) {
                 int left, top, right, bottom;
@@ -152,53 +149,10 @@ public class WebexMeetingActivity extends Activity {
                     right = insets.getSystemWindowInsetRight();
                     bottom = insets.getSystemWindowInsetBottom();
                 }
-                Log.i("WebexMeeting", "insets l=" + left + " t=" + top + " r=" + right + " b=" + bottom);
-                insetsReceived = top > 0 || bottom > 0;
                 v.setPadding(left, top, right, bottom);
-                return WindowInsets.CONSUMED;
+                return insets;
             }
-        };
-        root.setOnApplyWindowInsetsListener(listener);
-        // Also listen on the decor view in case the content frame doesn't forward insets.
-        getWindow().getDecorView().setOnApplyWindowInsetsListener(
-                new View.OnApplyWindowInsetsListener() {
-                    @Override
-                    public WindowInsets onApplyWindowInsets(View v, WindowInsets insets) {
-                        root.dispatchApplyWindowInsets(insets);
-                        return v.onApplyWindowInsets(insets);
-                    }
-                });
-        root.requestApplyInsets();
-
-        root.postDelayed(new Runnable() {
-            @Override public void run() { fallbackPadding(root); }
-        }, 400);
-    }
-
-    private boolean insetsReceived;
-
-    private void fallbackPadding(View root) {
-        if (insetsReceived || root.getPaddingTop() > 0 || isFinishing()) return;
-        int[] loc = new int[2];
-        root.getLocationOnScreen(loc);
-        int sb = systemDimen("status_bar_height");
-        int top = loc[1] < sb ? sb - loc[1] : 0;
-        int bottom = 0;
-        int screenH = getResources().getDisplayMetrics().heightPixels;
-        if (loc[1] + root.getHeight() >= screenH) {
-            boolean gesture = false;
-            try {
-                gesture = Settings.Secure.getInt(getContentResolver(), "navigation_mode", 0) == 2;
-            } catch (Throwable ignored) {}
-            bottom = systemDimen(gesture ? "navigation_bar_gesture_height" : "navigation_bar_height");
-        }
-        Log.i("WebexMeeting", "fallback padding top=" + top + " bottom=" + bottom);
-        root.setPadding(0, top, 0, bottom);
-    }
-
-    private int systemDimen(String name) {
-        int id = getResources().getIdentifier(name, "dimen", "android");
-        return id > 0 ? getResources().getDimensionPixelSize(id) : 0;
+        });
     }
 
     @SuppressLint("SetJavaScriptEnabled")
