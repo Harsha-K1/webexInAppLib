@@ -13,7 +13,6 @@ import android.provider.Settings;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.webkit.CookieManager;
 import android.webkit.PermissionRequest;
@@ -115,7 +114,6 @@ public class WebexMeetingActivity extends Activity {
                 Gravity.CENTER);
         root.addView(progress, plp);
 
-        applyWindowInsets(root);
         setContentView(root);
         configureWebView(desktop);
 
@@ -124,35 +122,6 @@ public class WebexMeetingActivity extends Activity {
         } else {
             requestPermissions(missingPermissions().toArray(new String[0]), REQ_PERMS);
         }
-    }
-
-    /**
-     * On Android 15+ (and whenever targetSdk >= 35) apps are drawn edge-to-edge, so the
-     * status/navigation bars overlap our content. Pad the root by the system bar insets
-     * (and the keyboard) so the Close bar and the web page stay clear of them.
-     */
-    private void applyWindowInsets(final View root) {
-        getWindow().setStatusBarColor(Color.parseColor("#1B1B1B"));
-        getWindow().setNavigationBarColor(Color.BLACK);
-        root.setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {
-            @Override
-            public WindowInsets onApplyWindowInsets(View v, WindowInsets insets) {
-                int left, top, right, bottom;
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    android.graphics.Insets i = insets.getInsets(
-                            WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout()
-                                    | WindowInsets.Type.ime());
-                    left = i.left; top = i.top; right = i.right; bottom = i.bottom;
-                } else {
-                    left = insets.getSystemWindowInsetLeft();
-                    top = insets.getSystemWindowInsetTop();
-                    right = insets.getSystemWindowInsetRight();
-                    bottom = insets.getSystemWindowInsetBottom();
-                }
-                v.setPadding(left, top, right, bottom);
-                return insets;
-            }
-        });
     }
 
     @SuppressLint("SetJavaScriptEnabled")
